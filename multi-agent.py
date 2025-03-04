@@ -3,14 +3,10 @@ import backoff  #
 import openai  # OpenAI API接口库
 import pandas as pd  # 数据处理库
 import json  # JSON格式处理
-import re  # 正则表达式库
 import os  # 文件系统操作
-import argparse  # 命令行参数解析
-
 from tqdm import tqdm  # 进度条显示
 import numpy as np  # 数学计算库
 from sklearn import metrics  # 机器学习评估指标
-
 from httpx import TimeoutException, TooManyRedirects  # 关键修正点
 from openai import OpenAIError  # 确保 OpenAIError 是合法的异常类
 
@@ -21,8 +17,7 @@ from openai import OpenAIError  # 确保 OpenAIError 是合法的异常类
     max_tries=5,
     jitter=backoff.full_jitter
 )
-# 在Invoke_model函数中增加响应解析
-def Invoke_model(model, content):
+def Invoke_model(model, content):  # 调用gpt-4o模型函数，返回响应内容
     openai.api_key = 'sk-ZTY0MDcxNWI1Zjk1ZDc4YmNjNjYyZjZmNjczMDEwOGU'
     openai.api_base = 'https://api.gt4.pro/v1'
 
@@ -39,7 +34,7 @@ def Invoke_model(model, content):
     return response_content
 
 
-def generate_CoC_prompt(data_point):
+def generate_CoC_prompt(data_point):  # 只是写起，没有调用过
     """生成认知链（CoC）策略的提示模板"""
     if data_point:
         return f"""
@@ -63,7 +58,7 @@ def generate_CoC_prompt(data_point):
         """
 
 
-def Contextual_understanding_prompt(data_point):
+def Contextual_understanding_prompt(data_point):  # 生成语境分析模板
     if data_point:
         return f""" ### Instruction: You are a classifier for satirical works. Analyze the sentence according to the 
         following steps .Here, [0] indicates this sentence is not a sarcastic expression, [1] indicates This sentence 
@@ -85,7 +80,7 @@ def Contextual_understanding_prompt(data_point):
         """
 
 
-def Semantic_analysis_prompt(data_point):
+def Semantic_analysis_prompt(data_point):  # 生成语义分析模板
     if data_point:
         return f""" ### Instruction: You are a classifier for satirical works. Analyze the sentence according to the 
         following steps .Here, [0] indicates this sentence is not a sarcastic expression, [1] indicates This sentence 
@@ -106,7 +101,7 @@ def Semantic_analysis_prompt(data_point):
         """
 
 
-def Rhetorical_Analysis_prompt(data_point):
+def Rhetorical_Analysis_prompt(data_point):  # 生成修辞分析模板
     if data_point:
         return f""" ### Instruction: You are a classifier for satirical works. Analyze the sentence according to the 
         following steps .Here, [0] indicates this sentence is not a sarcastic expression, [1] indicates This sentence 
@@ -133,6 +128,7 @@ def Rhetorical_Analysis_prompt(data_point):
 
 
 def Reasoning_Decision_prompt(agent1_label, agent2_label, agent3_label):
+    # 生成推理分析模板，但是没有调用，因为我最后改成了直接投票的方式
     return f""" ### Instruction: You are a sarcastic judge arbitrator. By examining the labels given by each agent, 
     you ultimately determine the final label through voting and provide a label, where [0] represents "not sarcastic" 
     and [1] represents "sarcastic". 
@@ -158,23 +154,23 @@ def Reasoning_Decision_prompt(agent1_label, agent2_label, agent3_label):
 
 def Contextual_understanding_Agent(input_text):  # 语境理解Agent
 
-    content = Contextual_understanding_prompt(input_text)
+    content = Contextual_understanding_prompt(input_text)  # 调用语境分析模板
 
     return content
 
 
 def Semantic_analysis_Agent(input_text):  # 语义理解Agent
-    content = Semantic_analysis_prompt(input_text)
+    content = Semantic_analysis_prompt(input_text)  # 调用语义理解模板
 
     return content
 
 
 def Rhetorical_Analysis_Agent(input_text):  # 修辞分析Agent
-    content = Rhetorical_Analysis_prompt(input_text)
+    content = Rhetorical_Analysis_prompt(input_text)  # 调用修辞分析模板
     return content
 
 
-def Reasoning_Decision_Agent(agent1_label, agent2_label, agent3_label):  # 推理与决策代理
+def Reasoning_Decision_Agent(agent1_label, agent2_label, agent3_label):  # 推理与决策代理，直接投票的方式
     votes = [agent1_label, agent2_label, agent3_label]
     print(votes)
     vote0 = 0
@@ -189,11 +185,11 @@ def Reasoning_Decision_Agent(agent1_label, agent2_label, agent3_label):  # 推�
     else:
         label = 0
 
-    print(vote0,vote1)
+    print(vote0, vote1)
     return label
 
 
-def eval_performance(y_true, y_pred, metric_path=None):
+def eval_performance(y_true, y_pred, metric_path=None):  # 最后生成评价指标
     """评估模型性能指标"""
     # Precision
     metric_dict = {}
@@ -254,14 +250,13 @@ def eval_performance(y_true, y_pred, metric_path=None):
 
 if __name__ == '__main__':
     # 数据集路径
-    dataset_path = 'D:/PythonProject(LLM)/MyLLM/dataset/test_iacv1.csv'
+    dataset_path = 'D:/PythonProject(LLM)/MyLLM/dataset/test_iacv1.csv'  # 数据集路径
     output_path = 'gpt-4o_io.csv'  # 输出路径
-    metric_path = 'gpt-4o_iometric.json'  #
-    task_name = 'iacv1'
+    metric_path = 'gpt-4o_iometric.json'  # 输出评价指标路径
+    task_name = 'iacv1'  # 任务名字
 
-    AgentName = ''
-    chunks = 32
-    model = 'gpt-4o'
+    chunks = 32  # 将数据集划分成32块
+    model = 'gpt-4o'  # 调用gpt-4o模型
 
     df = pd.read_csv(dataset_path, encoding_errors='ignore')  # 读取数据集
     df.dropna(inplace=True)  # 删除缺失值行
@@ -270,162 +265,98 @@ if __name__ == '__main__':
     df_chunks = []  # 存储所有分块数据
 
     for chunk_num in range(chunks):
-        all_texts = []
-        all_labels = []
+        all_texts = []  # 存储每一个分块的文本
+        all_labels = []  # 储存每一个分块的标签
         chunk_file_path = output_path.replace('.csv', f'_{chunk_num + 1}.csv')  # 构建当前分块文件路径
-        c_path = output_path.replace('.csv', f'c_{chunk_num + 1}.csv')
-        s_path = output_path.replace('.csv', f's_{chunk_num + 1}.csv')
-        r_path = output_path.replace('.csv', f'r_{chunk_num + 1}.csv')
+
         if os.path.exists(chunk_file_path):  # 检查分块文件是否存在
             df_chunk = pd.read_csv(chunk_file_path)  # 读取已存在的分块文件
             df_chunks.append(df_chunk)
             continue
-        dfc = pd.DataFrame()
-        dfs = pd.DataFrame()
-        dfr = pd.DataFrame()
+
         # 处理当前数据块
         df_chunk = df[chunk_num * chunk_size:min(len(df), (chunk_num + 1) * chunk_size)]  # 切分当前数据块
 
         Contextual_understanding_Agent_output_texts = []  # 存储语境分析代理输出结果
         Semantic_analysis_Agent_output_texts = []  # 存储语义分析代理输出结果
         Rhetorical_Analysis_Agent_output_texts = []  # 存储修辞分析代理输出结果
-        Reasoning_Decision_Agent_output_texts = []
+        Reasoning_Decision_Agent_output_texts = []  # 存储推理决策代理输出结果
 
         Contextual_understanding_Agent_labels = []  # 存储语境分析代理预测标签
         Semantic_analysis_Agent_labels = []  # 存储语义分析代理预测标签
         Rhetorical_Analysis_Agent_labels = []  # 存储修辞分析代理预测标签
-        Reasoning_Decision_Agent_labels = []
-
-        Contextual_understanding_Agent_confidence = []  # 存储语境分析代理置信度
-        Semantic_analysis_Agent_confidence = []  # 存储语义分析代理置信度
-        Rhetorical_Analysis_Agent_confidence = []  # 存储修辞分析代理置信度
-        Reasoning_Decision_Agent_confidence = []
+        Reasoning_Decision_Agent_labels = []  # 存储推理决策代理输出标签
 
         for index, (_, row) in enumerate(tqdm(df_chunk.iterrows(), total=len(df_chunk),
                                               desc=f"Processing chunk {chunk_num + 1}/{chunks} for task")):
-            input_text = row['Text']
-            input_Label = row['Label']
+            input_text = row['Text']  # 获取数据集文本
+            input_Label = row['Label']  # 获取数据集标签
             all_texts.append(input_text)
             all_labels.append(input_Label)
 
             content = Contextual_understanding_Agent(input_text)  # 语境分析代理
             print('语境分析代理正在处理中：')
             print("----------------")  # 打印分隔线
-            result = Invoke_model(model, content)  # 调用模型
-
-            Contextual_understanding_Agent_output_texts.append(result)  # 存储检测结果
-            # Contextual_understanding_Agent_confidence.append(result['confidence'])
-            # 根据检测结果转换标签
-            # if result["label"] == 'Not Sarcastic' or result["label"] == 'not sarcastic' or result[
-            #     'label'] == 'non-satirical':
-            #     label = 0
-            # else:
-            #     label = 1
-            if '0' in result or '[0]' in result:
+            result = Invoke_model(model, content)  # 调用模型，得到相应内容
+            Contextual_understanding_Agent_output_texts.append(result)  # 存储语境分析代理给出的结果
+            if '0' in result or '[0]' in result:  # 相应结果里有[0]或0，就给标签打0，否则打1
                 pred = 0
             else:
                 pred = 1
-            Contextual_understanding_Agent_labels.append(pred)
+            Contextual_understanding_Agent_labels.append(pred)  # 存储语境分析代理给出的标签
             print("----------------")  # 打印分隔线
 
             content = Semantic_analysis_Agent(input_text)  # 语义分析代理
             print('语义分析代理正在处理中：')
-            result = Invoke_model(model, content)  # 调用模型
-            Semantic_analysis_Agent_output_texts.append(result)  # 存储检测结果
-
-            # Semantic_analysis_Agent_confidence.append(result['confidence'])
-            # 根据检测结果转换标签
-            # if result["label"] == 'Not Sarcastic' or result["label"] == 'not sarcastic' or result[
-            #     'label'] == 'non-satirical':
-            #     label = 0
-            # else:
-            #     label = 1
+            result = Invoke_model(model, content)  # 调用模型，得到相应内容
+            Semantic_analysis_Agent_output_texts.append(result)  # 存储语义分析代理给出的标签
             if '0' in result or '[0]' in result:
                 pred = 0
             else:
                 pred = 1
-            Semantic_analysis_Agent_labels.append(pred)
+            Semantic_analysis_Agent_labels.append(pred)  # 存储语义分析代理给出的标签
             print("----------------")  # 打印分隔线
 
             content = Rhetorical_Analysis_Agent(input_text)  # 修辞分析代理
             print('修辞分析代理正在处理中：')
-            result = Invoke_model(model, content)  # 调用模型
-            Rhetorical_Analysis_Agent_output_texts.append(result)  # 存储检测结果
-
-            # Rhetorical_Analysis_Agent_confidence.append(result['confidence'])
-            # 根据检测结果转换标签
-            # if result["label"] == 'Not Sarcastic' or result["label"] == 'not sarcastic' or result[
-            #     'label'] == 'non-satirical':
-            #     label = 0
-            # else:
-            #     label = 1
+            result = Invoke_model(model, content)  # 调用模型，得到相应内容
+            Rhetorical_Analysis_Agent_output_texts.append(result)  # 存储修辞分析代理给出的结果
             if '0' in result or '[0]' in result:
                 pred = 0
             else:
                 pred = 1
-            Rhetorical_Analysis_Agent_labels.append(pred)
+            Rhetorical_Analysis_Agent_labels.append(pred)  # 存储修辞分析代理给出的标签
             print("----------------")  # 打印分隔线
+
             if Contextual_understanding_Agent_labels[-1] == Semantic_analysis_Agent_labels[-1] == \
-                    Rhetorical_Analysis_Agent_labels[-1]:
+                    Rhetorical_Analysis_Agent_labels[-1]:  # 如果三个代理给出的标签一致，直接给出答案
                 print('各个代理得出的结论一致，可直接得出结论！')
                 result = '各个代理得出的结论一致，可直接得出结论！'
                 # 存储分析文本和标签
-                Reasoning_Decision_Agent_output_texts.append(result)
-                # Reasoning_Decision_Agent_confidence.append(result['confidence'])
-                Reasoning_Decision_Agent_labels.append(Contextual_understanding_Agent_labels[-1])
-            else:
+                Reasoning_Decision_Agent_output_texts.append(result)  #
+
+                Reasoning_Decision_Agent_labels.append(Contextual_understanding_Agent_labels[-1])  # 随便一个代理的便签给最后的决策代理
+            else:  # 如果有不一致的
                 print('有代理结论不一致，进入推理与决策代理。')
-                # agent1_output = Contextual_understanding_Agent_output_texts[-1]  # 取最后一次结果
+                # 分别存储3个代理的标签
                 agent1_label = Contextual_understanding_Agent_labels[-1]
-                # agent1_confidence = Contextual_understanding_Agent_confidence[-1]
-
-                # agent2_output = Semantic_analysis_Agent_output_texts[-1]
                 agent2_label = Semantic_analysis_Agent_labels[-1]
-                # agent2_confidence = Semantic_analysis_Agent_confidence[-1]
-
-                # agent3_output = Rhetorical_Analysis_Agent_output_texts[-1]
                 agent3_label = Rhetorical_Analysis_Agent_labels[-1]
-                # agent3_confidence = Rhetorical_Analysis_Agent_confidence[-1]
+                # 调用决策代理函数
+                result = Reasoning_Decision_Agent(agent1_label, agent2_label, agent3_label)
 
-                result = Reasoning_Decision_Agent(agent1_label,
-                                                  agent2_label,
-                                                  agent3_label)
+                Reasoning_Decision_Agent_output_texts.append(result)  # 存储决策代理结果
 
-                # result = Invoke_model(model, content)
-                Reasoning_Decision_Agent_output_texts.append(result)  # 存储分析文本
-                # if result["label"] == 'Not Sarcastic' or result["label"] == 'not sarcastic' or result[
-                #     'label'] == 'non-satirical':
-                #     label = 0
-                # else:
-                #     label = 1
-                Reasoning_Decision_Agent_labels.append(result)
-
-        # dfc = pd.DataFrame({
-        #     "output": Contextual_understanding_Agent_output_texts,
-        #     "pred": Contextual_understanding_Agent_labels
-        # })
-        # dfc.to_csv(c_path, index=False)
-        #
-        # dfs = pd.DataFrame({
-        #     "output": Semantic_analysis_Agent_output_texts,
-        #     "pred": Semantic_analysis_Agent_labels
-        # })
-        # dfs.to_csv(s_path, index=False)
-        #
-        # dfr = pd.DataFrame({
-        #     "output": Rhetorical_Analysis_Agent_output_texts,
-        #     "pred": Rhetorical_Analysis_Agent_labels
-        # })
-        # dfr.to_csv(r_path, index=False)
+                Reasoning_Decision_Agent_labels.append(result) # 存储决策代理结果
 
         df_chunk = pd.DataFrame({
-            "Text": all_texts,
-            "Label": all_labels,
-            "output": Reasoning_Decision_Agent_output_texts,
-            "pred": Reasoning_Decision_Agent_labels
+            "Text": all_texts, # Text列为原始文本
+            "Label": all_labels, # Label列为原始标签
+            "output": Reasoning_Decision_Agent_output_texts, # output列为决策代理的输出
+            "pred": Reasoning_Decision_Agent_labels # pred列为决策代理最后给的标签
         })
-        df_chunk.to_csv(chunk_file_path, index=False)
-        df_chunks.append(df_chunk)
+        df_chunk.to_csv(chunk_file_path, index=False) # 保存该分块的文件
+        df_chunks.append(df_chunk) # 将该分块的.csv文件加入到总.csv文件中
 
     df = pd.concat(df_chunks)  # 合并所有分块数据
 
